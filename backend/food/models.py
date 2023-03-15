@@ -1,49 +1,51 @@
+from django.core.validators import RegexValidator
 from django.db import models
 from users.models import User
 
 
-class Unit(models.Model):
-    unit = models.CharField('Measurement unit', max_length=10)
-
-
-class ComponentName(models.Model):
+class Ingredient(models.Model):
     name = models.CharField('Component name', max_length=100)
+    measurement_unit = models.CharField('Measurement unit', max_length=10)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=('name', 'measurement_unit'), name='Ingredient_unique')]
 
 
-class Component(models.Model):
-    name = models.ForeignKey(
-        ComponentName,
-        models.CASCADE,
-        related_name='components'
+class IngredientThrough(models.Model):
+    ingredient = models.ForeignKey(
+        Ingredient,
+        models.CASCADE, # possible SET_NULL or DO_NOTHING?
+        related_name='through'
     )
-    unit = models.ForeignKey(
-        Unit,
+    recipe = models.ForeignKey(
+        'Recipe',
         models.CASCADE,
-        related_name='components'
+        related_name='ingredients'
     )
-    amount = models.IntegerField('Amount of component')
+    amount = models.IntegerField('Amount needed to use')
 
 
 class Tag(models.Model):
     name = models.CharField('Tag name', max_length=20)
-    hex = models.CharField('Hex color', max_length=6)
-    slug = models.SlugField('Tag slug')
+    color = models.CharField(
+        'Hex color',
+        max_length=7,
+        validators=[RegexValidator(r"^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$")]
+    )
+    slug = models.SlugField('Tag slug', unique=True)
 
 
-class Receipt(models.Model):
+class Recipe(models.Model):
     author = models.ForeignKey(
         User,
         models.CASCADE,
-        related_name='receipts'
+        related_name='recipes'
     )
-    name = models.CharField('Receipt name', max_length=100)
+    name = models.CharField('recipe name', max_length=100)
     image = models.ImageField()
-    description = models.TextField()
-    components = models.ManyToManyField(
-        Component,
-        related_name='receipts'
-    )
+    text = models.TextField()
     tags = models.ManyToManyField(
         Tag,
-        related_name='receipts'
+        related_name='recipes'
     )
+    cooking_time = models.IntegerField('Time to finish cooking in minutes')
