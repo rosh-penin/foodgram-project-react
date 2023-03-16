@@ -13,7 +13,7 @@ services:
     #   dockerfile: Dockerfile
     volumes:
       # - ../frontend/:/app/result_build/
-      - .frontend:/foodgram/result_build/
+      - ./frontend:/foodgram/result_build/
   backend:
     image: roshpenin/foodgram-backend:latest
     restart: always
@@ -31,7 +31,7 @@ services:
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       # - ../frontend/build:/usr/share/nginx/html/
-      - .frontend/build:/usr/share/nginx/html/
+      - ./frontend/build:/usr/share/nginx/html/
       - ./docs/:/usr/share/nginx/html/api/docs/
       - static_value:/var/html/static/
       - media_value:/var/html/media/
