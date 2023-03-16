@@ -75,6 +75,7 @@ jobs:
           username: ${{ secrets.USER }}
           key: ${{ secrets.SSH_KEY }}
           script: |
+            cd foodgram
             sudo docker-compose rm -fs backend
             sudo docker-compose pull backend
             echo DB_ENGINE=${{ secrets.DB_ENGINE }} > .env
