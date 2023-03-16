@@ -42,6 +42,10 @@ jobs:
           context: backend/
           push: true
           tags: roshpenin/foodgram-backend:latest
+        with:
+          context: frontend/
+          push: true
+          tags: roshpenin/foodgram-frontend:latest
   
   pre-deploy:
     if: github.ref == 'refs/heads/master'

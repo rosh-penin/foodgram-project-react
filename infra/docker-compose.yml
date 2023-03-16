@@ -4,9 +4,10 @@ services:
     image: postgres:latest
 
   frontend:
-    build:
-      context: ../frontend
-      dockerfile: Dockerfile
+    image: roshpenin/foodgram-frontend:latest
+    # build:
+    #   context: ../frontend
+    #   dockerfile: Dockerfile
     volumes:
       - ../frontend/:/app/result_build/
 
