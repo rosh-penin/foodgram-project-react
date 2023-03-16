@@ -7,6 +7,14 @@ from food.models import Recipe, Ingredient, Tag, User, IngredientThrough
 from users.models import Subscription
 
 
+def user_is_on_it(user, manager, key, object):
+    if user.is_authenticated and manager.filter(**{key: object.pk}):
+
+        return True
+
+    return False
+
+
 class DecodeImageField(serializers.ImageField):
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
@@ -61,11 +69,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, object):
         user = self.context['request'].user
-        if user.is_authenticated and user.subscriptions.filter(followed=object.pk):
 
-            return True
-
-        return False
+        return user_is_on_it(user, user.subscriptions, 'followed', object)
 
 
 class UserCreateSerializer(DjoserUserCreateSerializer):
@@ -81,11 +86,22 @@ class RecipeSerializer(serializers.ModelSerializer):
     tags = TagsSerializer(many=True)
     author = UserSerializer(read_only=True)
     image = DecodeImageField()
+    is_favorited = serializers.SerializerMethodField(read_only=True)
+    is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
         model = Recipe
-        # fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited', 'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time')
-        fields = ('id', 'tags', 'author', 'ingredients', 'name', 'image', 'text', 'cooking_time')
+        fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited', 'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time')
+
+    def get_is_favorited(self, object):
+        user = self.context['request'].user
+
+        return user_is_on_it(user, user.favorites, 'recipe', object)
+    
+    def get_is_in_shopping_cart(self, object):
+        user = self.context['request'].user
+
+        return user_is_on_it(user, user.carts, 'recipe', object)
 
     def extract_ingredients_tags(self, data, model):
         somelist = []
