@@ -42,6 +42,7 @@ jobs:
           context: backend/
           push: true
           tags: roshpenin/foodgram-backend:latest
+      - uses: docker/build-push-action@v2 
         with:
           context: frontend/
           push: true
