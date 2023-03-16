@@ -1,4 +1,4 @@
-FROM python3.10:alpine3.17
+FROM python3.10:latest
 WORKDIR /foodgram
 COPY . .
 RUN pip install -r requirements.txt --no-cache-dir
