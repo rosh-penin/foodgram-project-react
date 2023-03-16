@@ -3,6 +3,7 @@ import base64
 from django.core.files.base import ContentFile
 from djoser.serializers import UserCreateSerializer as DjoserUserCreateSerializer
 from rest_framework import serializers
+from rest_framework.exceptions import NotFound
 from food.models import Recipe, Ingredient, Tag, User, IngredientThrough
 from users.models import Subscription
 
@@ -42,7 +43,7 @@ class IngredientSerializer(serializers.ModelSerializer):
     
     def to_internal_value(self, data):
         if not Ingredient.objects.filter(id=data.get('id')).exists():
-            raise serializers.ValidationError('No such ingredient')
+            raise NotFound('No such ingredient')
 
         return data
 
@@ -55,7 +56,7 @@ class TagsSerializer(serializers.ModelSerializer):
     
     def to_internal_value(self, data):
         if not Tag.objects.filter(id=data).exists():
-            raise serializers.ValidationError('No such tag')
+            raise NotFound('No such tag')
 
         return {'id': data}
 
