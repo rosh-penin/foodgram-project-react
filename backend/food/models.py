@@ -10,6 +10,9 @@ class Ingredient(models.Model):
     class Meta:
         constraints = [models.UniqueConstraint(fields=('name', 'measurement_unit'), name='Ingredient_unique')]
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class IngredientThrough(models.Model):
     ingredient = models.ForeignKey(
@@ -33,6 +36,9 @@ class Tag(models.Model):
         validators=[RegexValidator(r"^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$")]
     )
     slug = models.SlugField('Tag slug', unique=True)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Recipe(models.Model):
