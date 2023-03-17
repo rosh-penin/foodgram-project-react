@@ -11,6 +11,10 @@ DEBUG = os.getenv('DEBUG', False)
 
 ALLOWED_HOSTS = ['*']
 
+HOST_IP = os.getenv('HOST', 'localhost')
+
+CSRF_TRUSTED_ORIGINS = [f'http://{HOST_IP}']
+
 
 INSTALLED_APPS = [
     'django.contrib.admin',
