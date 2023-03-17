@@ -88,7 +88,8 @@ jobs:
             echo DB_PORT=${{ secrets.DB_PORT }} >> .env
             echo DJANGO_KEY=${{ secrets.DJANGO_KEY }} >> .env
             sudo docker-compose up -d
-            sudo docker-compose exec backend python manage.py migrate
+            sudo docker-compose exec -it backend python manage.py migrate
+
   
   # telegram:
   #   if: github.ref == 'refs/heads/master'
