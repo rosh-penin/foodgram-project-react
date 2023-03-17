@@ -45,7 +45,7 @@ class IngredientSerializer(serializers.ModelSerializer):
         someid, amount = data.get('id'), data.get('amount')
         if not Ingredient.objects.filter(id=someid).exists():
             raise NotFound('No such ingredient')
-        if not amount or not isinstance(amount, int):
+        if not amount:
             raise serializers.ValidationError('You must specify amount with int value')
 
         return {'ingredient': Ingredient.objects.get(id=someid), 'amount': amount}
