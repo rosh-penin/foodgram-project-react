@@ -99,6 +99,7 @@ class TagsViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, GenericViewS
     serializer_class = TagsSerializer
     permission_classes = [AllowAny]
     allowed_methods = ['GET']
+    pagination_class = None
 
 
 class UsersViewSet(DjUserViewSet):
