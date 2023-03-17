@@ -43,6 +43,8 @@ class IngredientSerializer(serializers.ModelSerializer):
     
     def to_internal_value(self, data):
         someid, amount = data.get('id'), data.get('amount')
+        if IngredientThrough.objects.filter(id=someid, amount=amount).exists():
+            someid = IngredientThrough.objects.select_related('ingredient').get(id=someid, amount=amount).ingredient.id
         if not Ingredient.objects.filter(id=someid).exists():
             raise NotFound('No such ingredient')
         if not amount:
@@ -125,7 +127,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         return user_is_on_it(user, Cart, {'recipe': object.pk, 'user': user})
     
-    def lazy_validation(self, attrs):
+    def dublicate_validation(self, attrs):
         final = []
         for attr in attrs:
             if attr in final:
@@ -134,7 +136,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         for doubt_value in (attrs.get('tags'), attrs.get('ingredients')):
-            self.lazy_validation(doubt_value)
+            self.dublicate_validation(doubt_value)
 
         return super().validate(attrs)
     
