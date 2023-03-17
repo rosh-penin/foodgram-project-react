@@ -5,11 +5,11 @@ from djoser.serializers import UserCreateSerializer as DjoserUserCreateSerialize
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 from food.models import Recipe, Ingredient, Tag, User, IngredientThrough
-from users.models import Subscription
+from users.models import Subscription, Favorites, Cart
 
 
-def user_is_on_it(user, manager, key, object):
-    if user.is_authenticated and manager.filter(**{key: object.pk}):
+def user_is_on_it(user, model, somedict):
+    if user.is_authenticated and model.objects.filter(**somedict):
 
         return True
 
@@ -42,10 +42,13 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit', 'amount')
     
     def to_internal_value(self, data):
-        if not Ingredient.objects.filter(id=data.get('id')).exists():
+        someid, amount = data.get('id'), data.get('amount')
+        if not Ingredient.objects.filter(id=someid).exists():
             raise NotFound('No such ingredient')
+        if not amount or not isinstance(amount, int):
+            raise serializers.ValidationError('You must specify amount with int value')
 
-        return data
+        return {'ingredient': Ingredient.objects.get(id=someid), 'amount': amount}
 
 
 class TagsSerializer(serializers.ModelSerializer):
@@ -58,7 +61,7 @@ class TagsSerializer(serializers.ModelSerializer):
         if not Tag.objects.filter(id=data).exists():
             raise NotFound('No such tag')
 
-        return {'id': data}
+        return Tag.objects.get(id=data)
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -71,7 +74,7 @@ class UserSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, object):
         user = self.context['request'].user
 
-        return user_is_on_it(user, user.subscriptions, 'followed', object)
+        return user_is_on_it(user, Subscription, {'followed': object.pk, 'follower': user})
 
 
 class UserCreateSerializer(DjoserUserCreateSerializer):
@@ -94,44 +97,50 @@ class RecipeSerializer(serializers.ModelSerializer):
         model = Recipe
         fields = ('id', 'tags', 'author', 'ingredients', 'is_favorited', 'is_in_shopping_cart', 'name', 'image', 'text', 'cooking_time')
 
+    def create(self, validated_data):
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
+        for key, value in (('ingredients', ingredients), ('tags', tags)):
+            if not value:
+                raise serializers.ValidationError(f'Empty value: {key}')
+
+        image = validated_data.pop('image')
+        if Recipe.objects.filter(**validated_data).exists():
+            raise serializers.ValidationError('You already created this recipe')
+
+        recipe = Recipe.objects.create(**validated_data, image=image)
+        recipe.tags.set(tags)
+        for dict_of_ingredients in ingredients:
+            IngredientThrough.objects.create(recipe=recipe, **dict_of_ingredients)
+
+        return recipe
+    
     def get_is_favorited(self, object):
         user = self.context['request'].user
 
-        return user_is_on_it(user, user.favorites, 'recipe', object)
+        return user_is_on_it(user, Favorites, {'recipe': object.pk, 'follower': user})
     
     def get_is_in_shopping_cart(self, object):
         user = self.context['request'].user
 
-        return user_is_on_it(user, user.carts, 'recipe', object)
+        return user_is_on_it(user, Cart, {'recipe': object.pk, 'user': user})
+    
+    def lazy_validation(self, attrs):
+        final = []
+        for attr in attrs:
+            if attr in final:
+                raise serializers.ValidationError(f'Duplicates: {attr}')
+            final.append(attr)
 
-    def extract_ingredients_tags(self, data, model):
-        somelist = []
-        for object in data:
-            if model.objects.filter(pk=object.get('id')).exists():
-                amount = object.get('amount')
-                if amount:
-                    somelist.append((model.objects.get(pk=object.get('id')), amount))
-                else:
-                    somelist.append((model.objects.get(pk=object.get('id'))))
+    def validate(self, attrs):
+        for doubt_value in (attrs.get('tags'), attrs.get('ingredients')):
+            self.lazy_validation(doubt_value)
 
-        return somelist
-
-    def create(self, validated_data):
-        ingredients = self.extract_ingredients_tags(validated_data.pop('ingredients'), Ingredient)
-        tags = self.extract_ingredients_tags(validated_data.pop('tags'), Tag)
-
-        recipe = Recipe.objects.create(**validated_data)
-        if tags:
-            recipe.tags.set(tags)
-
-        for ingredient, amount in ingredients:
-            IngredientThrough.objects.create(recipe=recipe, ingredient=ingredient, amount=amount)
-
-        return recipe
+        return super().validate(attrs)
     
     def update(self, instance, validated_data):
-        ingredients = self.extract_ingredients_tags(validated_data.pop('ingredients'), Ingredient)
-        tags = self.extract_ingredients_tags(validated_data.pop('tags'), Tag)
+        ingredients = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
 
         if tags:
             instance.tags.clear()
@@ -139,8 +148,8 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         if ingredients:
             instance.ingredients.all().delete()
-            for ingredient, amount in ingredients:
-                IngredientThrough.objects.create(recipe=instance, ingredient=ingredient, amount=amount)
+            for dict_of_ingredients in ingredients:
+                IngredientThrough.objects.create(recipe=instance, **dict_of_ingredients)
 
         return super().update(instance, validated_data)
 
