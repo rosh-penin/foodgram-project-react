@@ -54,11 +54,11 @@ class TagsSerializer(serializers.ModelSerializer):
         model = Tag
         fields = ('id', 'name', 'color', 'slug')
     
-    # def to_internal_value(self, data):
-    #     if not Tag.objects.filter(id=data).exists():
-    #         raise NotFound('No such tag')
+    def to_internal_value(self, data):
+        if not Tag.objects.filter(id=data).exists():
+            raise NotFound('No such tag')
 
-    #     return {'id': data}
+        return {'id': data}
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -84,7 +84,7 @@ class UserCreateSerializer(DjoserUserCreateSerializer):
 
 class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientSerializer(many=True)
-    tags = serializers.PrimaryKeyRelatedField(queryset=Tag.objects.all(), many=True)
+    tags = TagsSerializer(many=True)
     author = UserSerializer(read_only=True)
     image = DecodeImageField()
     is_favorited = serializers.SerializerMethodField(read_only=True)
