@@ -1,5 +1,5 @@
 from django.db.models import Q
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjUserViewSet
 from rest_framework import mixins
@@ -77,11 +77,11 @@ class RecipeViewSet(ModelViewSet):
         for k, v in somedict.items():
             file = file + f'\n{k} - {v}'
         
-        response = HttpResponse(file, content_type='text/plain; charset=utf8')
-        response['Content-Disposition'] = 'attachment; filename=ShoppingCart.txt'
-        response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+        # response = HttpResponse(file, content_type='text/plain; charset=utf8')
+        # response['Content-Disposition'] = 'attachment; filename=ShoppingCart.txt'
+        # response['Access-Control-Expose-Headers'] = 'Content-Disposition'
 
-        return response
+        return FileResponse(file, as_attachment=True, filename='ShoppingCart.txt')
 
     @action(['post', 'delete'], detail=True)
     def favorite(self, request, pk):
