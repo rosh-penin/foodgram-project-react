@@ -55,3 +55,4 @@ class Recipe(models.Model):
         related_name='recipes'
     )
     cooking_time = models.IntegerField('Time to finish cooking in minutes')
+    date_created = models.DateTimeField('Time and date of creation', auto_now_add=True)

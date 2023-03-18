@@ -25,7 +25,7 @@ class IngredientViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, Generi
 
 
 class RecipeViewSet(ModelViewSet):
-    queryset = Recipe.objects.all()
+    queryset = Recipe.objects.order_by('date_created')
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrReadOnly]
     filterset_class = RecipeFilter
