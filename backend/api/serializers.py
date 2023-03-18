@@ -172,7 +172,7 @@ class UserSubscriptionsSerializer(UserSerializer):
 
     def get_recipes(self, value):
         recipes_limit = self.context.get('request').query_params.get('recipes_limit')
-        queryset = value.recipes.order_by('date_created')
+        queryset = value.recipes.order_by('-date_created')
         if recipes_limit is not None:
             recipes_limit = int(recipes_limit)
             serializer = RecipeInclusionSerializer(data=queryset[:recipes_limit], many=True)
