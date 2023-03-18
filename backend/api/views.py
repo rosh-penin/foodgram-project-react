@@ -84,7 +84,7 @@ class RecipeViewSet(ModelViewSet):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
-            recipe = get_object_or_404(Recipe, pk=id)
+            recipe = get_object_or_404(Recipe, pk=pk)
             if not Favorites.objects.filter(recipe=recipe, follower=request.user).exists():
 
                 return Response(status=status.HTTP_400_BAD_REQUEST)
