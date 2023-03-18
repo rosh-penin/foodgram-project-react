@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjUserViewSet
@@ -25,10 +26,18 @@ class IngredientViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, Generi
 
 
 class RecipeViewSet(ModelViewSet):
-    queryset = Recipe.objects.order_by('date_created')
+    # queryset = Recipe.objects.order_by('date_created')
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrReadOnly]
     filterset_class = RecipeFilter
+
+    def get_queryset(self):
+        condition = Q()
+        tags = self.request.query_params.getlist('tags')
+        for tag in tags:
+            condition |= Q(tags__slug=tag)
+
+        return Recipe.objects.filter(condition).order_by('-date_created')
     
     @action(['post', 'delete'], detail=True)
     def shopping_cart(self, request, pk):

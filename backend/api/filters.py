@@ -1,12 +1,12 @@
 from django.db.models import Q
 from django_filters import rest_framework as filters
+from food.models import Recipe
 
 
 class RecipeFilter(filters.FilterSet):
     is_in_shopping_cart = filters.BooleanFilter(method='get_is_in_cart')
     is_favorited = filters.BooleanFilter(method='get_is_favorited')
     author = filters.NumberFilter('author')
-    tags = filters.CharFilter('tags__slug')
 
     def common_method_filter(self, queryset, dict_values, value):
         if value:
