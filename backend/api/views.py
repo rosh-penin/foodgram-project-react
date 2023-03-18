@@ -1,5 +1,5 @@
 from django.db.models import Q
-from django.http import HttpResponse, FileResponse
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjUserViewSet
 from rest_framework import mixins
@@ -26,7 +26,6 @@ class IngredientViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, Generi
 
 
 class RecipeViewSet(ModelViewSet):
-    # queryset = Recipe.objects.order_by('date_created')
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrReadOnly]
     filterset_class = RecipeFilter
