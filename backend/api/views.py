@@ -79,7 +79,8 @@ class RecipeViewSet(ModelViewSet):
 
         response = FileResponse(file, as_attachment=True, filename='ShoppingCart.txt', content_type='text/*; charset=utf8')
         # response['Content-Disposition'] = 'attachment; filename=ShoppingCart.txt'
-        response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+        # response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+        response.set_headers(file)
 
         return response
 
