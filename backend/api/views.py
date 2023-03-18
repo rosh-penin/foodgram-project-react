@@ -77,7 +77,7 @@ class RecipeViewSet(ModelViewSet):
         for k, v in somedict.items():
             file = file + f'\n{k} - {v}'
         
-        response = HttpResponse(file, content_type='text/plain')
+        response = HttpResponse(file, content_type='text/plain; charset=utf8')
         response['Content-Disposition'] = 'attachment; filename=ShoppingCart.txt'
 
         return response
