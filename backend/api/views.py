@@ -71,9 +71,9 @@ class RecipeViewSet(ModelViewSet):
         return FileResponse(file, content_type='txt')
 
     @action(['post', 'delete'], detail=True)
-    def favorite(self, request, id):
+    def favorite(self, request, pk):
         if request.method == 'POST':
-            recipe = get_object_or_404(Recipe, pk=id)
+            recipe = get_object_or_404(Recipe, pk=pk)
             if Favorites.objects.filter(recipe=recipe, follower=request.user).exists():
 
                 return Response(status=status.HTTP_400_BAD_REQUEST)
