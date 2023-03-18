@@ -79,6 +79,7 @@ class RecipeViewSet(ModelViewSet):
         
         response = HttpResponse(file, content_type='text/plain; charset=utf8')
         response['Content-Disposition'] = 'attachment; filename=ShoppingCart.txt'
+        response['Access-Control-Expose-Headers'] = 'Content-Disposition'
 
         return response
 
