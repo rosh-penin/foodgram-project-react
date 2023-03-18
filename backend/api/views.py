@@ -37,7 +37,7 @@ class RecipeViewSet(ModelViewSet):
         for tag in tags:
             condition |= Q(tags__slug=tag)
 
-        return Recipe.objects.filter(condition).order_by('-date_created')
+        return Recipe.objects.filter(condition).order_by('-date_created').distinct()
     
     @action(['post', 'delete'], detail=True)
     def shopping_cart(self, request, pk):
