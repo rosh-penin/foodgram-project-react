@@ -76,8 +76,11 @@ class RecipeViewSet(ModelViewSet):
 
         for k, v in somedict.items():
             file = file + f'\n{k} - {v}'
+        
+        response = FileResponse(file, content_type='text/plain')
+        response['Content-Disposition'] = 'attachment; filename=ShoppingCart.txt'
 
-        return FileResponse(file, content_type='text/txt')
+        return response
 
     @action(['post', 'delete'], detail=True)
     def favorite(self, request, pk):
