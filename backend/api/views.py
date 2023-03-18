@@ -1,5 +1,5 @@
 from django.db.models import Q
-from django.http import FileResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjUserViewSet
 from rest_framework import mixins
@@ -77,7 +77,7 @@ class RecipeViewSet(ModelViewSet):
         for k, v in somedict.items():
             file = file + f'\n{k} - {v}'
         
-        response = FileResponse(file, content_type='text/plain')
+        response = HttpResponse(file, content_type='text/plain')
         response['Content-Disposition'] = 'attachment; filename=ShoppingCart.txt'
 
         return response
