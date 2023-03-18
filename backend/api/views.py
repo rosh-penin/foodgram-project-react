@@ -10,6 +10,7 @@ from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from food.models import Recipe, Tag, Ingredient
 from users.models import User, Subscription, Favorites, Cart
 
+from .filters import RecipeFilter, IngredientFilter
 from .permissions import IsAuthorOrReadOnly
 from .serializers import RecipeSerializer, RecipeInclusionSerializer, TagsSerializer, IngredientShowSerializer, UserSubscriptionsSerializer, SubscriptionsSerializer
 
@@ -20,12 +21,14 @@ class IngredientViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, Generi
     pagination_class = None
     permission_classes = [AllowAny]
     allowed_methods = ['GET']
+    filterset_class = IngredientFilter
 
 
 class RecipeViewSet(ModelViewSet):
     queryset = Recipe.objects.all()
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrReadOnly]
+    filterset_class = RecipeFilter
     
     @action(['post', 'delete'], detail=True)
     def shopping_cart(self, request, pk):

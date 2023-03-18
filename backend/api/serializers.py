@@ -127,7 +127,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         return user_is_on_it(user, Cart, {'recipe': object.pk, 'user': user})
     
-    def dublicate_validation(self, attrs):
+    def duplicate_validation(self, attrs):
         final = []
         for attr in attrs:
             if attr in final:
@@ -136,7 +136,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         for doubt_value in (attrs.get('tags'), attrs.get('ingredients')):
-            self.dublicate_validation(doubt_value)
+            self.duplicate_validation(doubt_value)
 
         return super().validate(attrs)
     
@@ -164,11 +164,22 @@ class RecipeInclusionSerializer(serializers.ModelSerializer):
 
 
 class UserSubscriptionsSerializer(UserSerializer):
-    recipes = RecipeInclusionSerializer(many=True, read_only=True)
+    recipes = serializers.SerializerMethodField(read_only=True)
     recipes_count = serializers.IntegerField(source='recipes.count', read_only=True)
 
     class Meta(UserSerializer.Meta):
         fields = ('email', 'id', 'username', 'first_name', 'last_name', 'is_subscribed', 'recipes', 'recipes_count')
+
+    def get_recipes(self, value):
+        recipes_limit = self.context.get('request').query_params.get('recipes_limit')
+        if recipes_limit is not None:
+            recipes_limit = int(recipes_limit)
+            serializer = RecipeInclusionSerializer(data=value.recipes.all()[:recipes_limit], many=True)
+        else:
+            serializer = RecipeInclusionSerializer(data=value.recipes.all(), many=True)
+
+        serializer.is_valid()
+        return serializer.data
 
 
 class SubscriptionsSerializer(serializers.ModelSerializer):
