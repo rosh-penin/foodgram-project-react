@@ -78,8 +78,8 @@ class RecipeViewSet(ModelViewSet):
             file = file + f'\n{k} - {v}'
 
         response = FileResponse(file, as_attachment=True, content_type='text/plain; charset=utf8')
-        response['Content-Disposition'] = 'attachment; filename=ShoppingCart.txt'
-        response['Access-Control-Expose-Headers'] = 'Content-Disposition'
+        # response['Content-Disposition'] = 'attachment; filename=ShoppingCart.txt'
+        # response['Access-Control-Expose-Headers'] = 'Content-Disposition'
 
         return response
 
