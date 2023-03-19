@@ -3,6 +3,7 @@ from django.db import models
 
 
 class User(AbstractUser):
+    """Overriden User model."""
     email = models.EmailField("Email address", unique=True)
     password = models.CharField("password", max_length=150)
     first_name = models.CharField('First Name', max_length=150)
@@ -19,6 +20,7 @@ class User(AbstractUser):
 
 
 class Subscription(models.Model):
+    """Through model for MToM relation User-User model."""
     follower = models.ForeignKey(
         User,
         models.CASCADE,
@@ -38,6 +40,10 @@ class Subscription(models.Model):
 
 
 class Favorites(models.Model):
+    """
+    Through model for MToM relation User-Recipe models.
+    Favorites.
+    """
     follower = models.ForeignKey(
         User,
         models.CASCADE,
@@ -57,6 +63,10 @@ class Favorites(models.Model):
 
 
 class Cart(models.Model):
+    """
+    Through model for MToM relation User-Recipe models.
+    Shopping cart.
+    """
     recipe = models.ForeignKey(
         'food.Recipe',
         models.CASCADE,

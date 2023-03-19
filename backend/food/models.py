@@ -4,6 +4,7 @@ from users.models import User
 
 
 class Ingredient(models.Model):
+    """Model for ingredients."""
     name = models.CharField('Component name', max_length=100)
     measurement_unit = models.CharField('Measurement unit', max_length=10)
 
@@ -18,6 +19,9 @@ class Ingredient(models.Model):
 
 
 class IngredientThrough(models.Model):
+    """
+    A through model for MToM relation between Recipe and Ingredient models.
+    """
     ingredient = models.ForeignKey(
         Ingredient,
         models.CASCADE,  # possible SET_NULL or DO_NOTHING?
@@ -32,6 +36,7 @@ class IngredientThrough(models.Model):
 
 
 class Tag(models.Model):
+    """Model for tags."""
     name = models.CharField('Tag name', max_length=20)
     color = models.CharField(
         'Hex color',
@@ -45,6 +50,7 @@ class Tag(models.Model):
 
 
 class Recipe(models.Model):
+    """Model for recipes."""
     author = models.ForeignKey(
         User,
         models.CASCADE,

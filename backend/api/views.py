@@ -22,6 +22,7 @@ class IngredientViewSet(
     mixins.ListModelMixin,
     GenericViewSet
 ):
+    """Viewset for Ingredient model."""
     queryset = Ingredient.objects.all()
     serializer_class = IngredientShowSerializer
     pagination_class = None
@@ -31,11 +32,13 @@ class IngredientViewSet(
 
 
 class RecipeViewSet(ModelViewSet):
+    """Viewset for Recipe model."""
     serializer_class = RecipeSerializer
     permission_classes = [IsAuthorOrReadOnly]
     filterset_class = RecipeFilter
 
     def get_queryset(self):
+        """Returns queryset with filtering by tags and date."""
         condition = Q()
         tags = self.request.query_params.getlist('tags')
         for tag in tags:
@@ -47,6 +50,7 @@ class RecipeViewSet(ModelViewSet):
 
     @action(['post', 'delete'], detail=True)
     def shopping_cart(self, request, pk):
+        """Adding and removing recipe from shopping cart."""
         if request.method == 'POST':
             recipe = get_object_or_404(Recipe, pk=pk)
             if Cart.objects.filter(recipe=recipe, user=request.user).exists():
@@ -73,6 +77,7 @@ class RecipeViewSet(ModelViewSet):
 
     @action(['get'], detail=False)
     def download_shopping_cart(self, request):
+        """Returns .txt file with all ingredients combined."""
         file = 'Your Shopping List'
         somedict = dict()
         for cart in request.user.carts.all():
@@ -94,6 +99,7 @@ class RecipeViewSet(ModelViewSet):
 
     @action(['post', 'delete'], detail=True)
     def favorite(self, request, pk):
+        """Add and remove recipe from favorites."""
         if request.method == 'POST':
             recipe = get_object_or_404(Recipe, pk=pk)
             if Favorites.objects.filter(
@@ -125,6 +131,7 @@ class RecipeViewSet(ModelViewSet):
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     def perform_create(self, serializer):
+        """Add user as author to recipe."""
         serializer.save(author=self.request.user)
 
 
@@ -133,6 +140,7 @@ class TagsViewSet(
     mixins.ListModelMixin,
     GenericViewSet
 ):
+    """Viewset for Tag model."""
     queryset = Tag.objects.all()
     serializer_class = TagsSerializer
     permission_classes = [AllowAny]
@@ -141,15 +149,18 @@ class TagsViewSet(
 
 
 class UsersViewSet(DjUserViewSet):
+    """Overriden djoset.views.UserViewSet."""
     queryset = User.objects.all()
 
     def get_permissions(self):
+        """New permissions for new actions."""
         if self.action in ['subscriptions', 'subscribe']:
             self.permission_classes = [IsAuthenticated]
 
         return super().get_permissions()
 
     def get_serializer_class(self):
+        """New serializers for new actions."""
         if self.action == 'subscriptions':
 
             return UserSubscriptionsSerializer
@@ -162,6 +173,7 @@ class UsersViewSet(DjUserViewSet):
 
     @action(['get'], detail=False)
     def subscriptions(self, request):
+        """Returns all users that request.user follows."""
         user = request.user
         queryset = user.follows.all()
         page = self.paginate_queryset(queryset)
@@ -176,6 +188,7 @@ class UsersViewSet(DjUserViewSet):
 
     @action(['post', 'delete'], detail=True)
     def subscribe(self, request, id):
+        """Subscribe and unsubscribe to user."""
         user = request.user
         if request.method == 'POST':
             serializer = self.get_serializer(

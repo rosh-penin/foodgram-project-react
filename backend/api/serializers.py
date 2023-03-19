@@ -9,6 +9,7 @@ from users.models import Cart, Favorites, Subscription
 
 
 def user_is_on_it(user, model, somedict):
+    """For the DRY."""
     if user.is_authenticated and model.objects.filter(**somedict):
 
         return True
@@ -17,6 +18,7 @@ def user_is_on_it(user, model, somedict):
 
 
 class DecodeImageField(serializers.ImageField):
+    """Image field in Base64 encoding."""
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
@@ -27,13 +29,14 @@ class DecodeImageField(serializers.ImageField):
 
 
 class IngredientShowSerializer(serializers.ModelSerializer):
-
+    """Serializer for Ingredient model."""
     class Meta:
         model = Ingredient
         fields = ('id', 'name', 'measurement_unit')
 
 
 class IngredientSerializer(serializers.ModelSerializer):
+    """Serializer for IngredientThrough model."""
     name = serializers.CharField(source='ingredient.name')
     measurement_unit = serializers.CharField(
         source='ingredient.measurement_unit'
@@ -44,6 +47,10 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
     def to_internal_value(self, data):
+        """
+        Returns Ingredient model instance.
+        Some base validation implemented, rest skipped.
+        """
         someid, amount = data.get('id'), data.get('amount')
         if IngredientThrough.objects.filter(id=someid, amount=amount).exists():
             someid = IngredientThrough.objects.select_related(
@@ -63,12 +70,13 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class TagsSerializer(serializers.ModelSerializer):
-
+    """Serializer for Tag model."""
     class Meta:
         model = Tag
         fields = ('id', 'name', 'color', 'slug')
 
     def to_internal_value(self, data):
+        """Returns Tag model instance."""
         if not Tag.objects.filter(id=data).exists():
             raise NotFound('No such tag')
 
@@ -76,6 +84,7 @@ class TagsSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    """Serializer for User model."""
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
@@ -90,6 +99,7 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_is_subscribed(self, object):
+        """If user is subscribed on object - returns True."""
         user = self.context['request'].user
 
         return user_is_on_it(
@@ -100,7 +110,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(DjUserCreateSerializer):
-
+    """Serializer for creating User model instances."""
     class Meta:
         model = User
         fields = (
@@ -118,6 +128,7 @@ class UserCreateSerializer(DjUserCreateSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
+    """Serializer for Recipe model."""
     ingredients = IngredientSerializer(many=True)
     tags = TagsSerializer(many=True)
     author = UserSerializer(read_only=True)
@@ -141,6 +152,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
     def create(self, validated_data):
+        """Most logic here is for populating MToM related tables."""
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
         for key, value in (('ingredients', ingredients), ('tags', tags)):
@@ -164,6 +176,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def get_is_favorited(self, object):
+        """If recipes is favorited - returns True."""
         user = self.context['request'].user
 
         return user_is_on_it(
@@ -173,11 +186,16 @@ class RecipeSerializer(serializers.ModelSerializer):
         )
 
     def get_is_in_shopping_cart(self, object):
+        """If recipe is in shopping cart - returns True."""
         user = self.context['request'].user
 
         return user_is_on_it(user, Cart, {'recipe': object.pk, 'user': user})
 
     def duplicate_validation(self, attrs):
+        """
+        Check for duplicates in Tags and Ingredients.
+        You can only add distinct objects of those models in Recipe instance.
+        """
         final = []
         for attr in attrs:
             if attr in final:
@@ -185,12 +203,19 @@ class RecipeSerializer(serializers.ModelSerializer):
             final.append(attr)
 
     def validate(self, attrs):
+        """
+        Overriden validate method calls duplicate_validation for some objects.
+        """
         for doubt_value in (attrs.get('tags'), attrs.get('ingredients')):
             self.duplicate_validation(doubt_value)
 
         return super().validate(attrs)
 
     def update(self, instance, validated_data):
+        """
+        Most logic here is for re-populating MToM related tables.
+        For Recipe model.
+        """
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
 
@@ -210,13 +235,14 @@ class RecipeSerializer(serializers.ModelSerializer):
 
 
 class RecipeInclusionSerializer(serializers.ModelSerializer):
-
+    """Serializer for shortened representation of Recipe model."""
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class UserSubscriptionsSerializer(UserSerializer):
+    """Serializer for subscriptions of User model."""
     recipes = serializers.SerializerMethodField(read_only=True)
     recipes_count = serializers.IntegerField(
         source='recipes.count',
@@ -236,6 +262,7 @@ class UserSubscriptionsSerializer(UserSerializer):
         )
 
     def get_recipes(self, value):
+        """Calls another serializer to display recipes with filtering."""
         recipes_limit = self.context.get(
             'request'
         ).query_params.get('recipes_limit')
@@ -254,12 +281,13 @@ class UserSubscriptionsSerializer(UserSerializer):
 
 
 class SubscriptionsSerializer(serializers.ModelSerializer):
-
+    """Serializer for Subscription modedl."""
     class Meta:
         model = Subscription
         fields = ('follower', 'followed')
 
     def validate(self, attrs):
+        """You can't follow yourself or already followed user."""
         user = attrs.get('follower')
         followed = attrs.get('followed')
         if user == followed:
