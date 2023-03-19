@@ -1,8 +1,8 @@
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjUserViewSet
-from food.models import Ingredient, Recipe, Tag
+from food.models import Ingredient, IngredientThrough, Recipe, Tag
 from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -79,18 +79,13 @@ class RecipeViewSet(ModelViewSet):
     def download_shopping_cart(self, request):
         """Returns .txt file with all ingredients combined."""
         file = 'Your Shopping List'
-        somedict = dict()
-        for cart in request.user.carts.all():
-            for ingredient in cart.recipe.ingredients.all():
-                key = (f'{ingredient.ingredient.name} '
-                       '({ingredient.ingredient.measurement_unit})')
-                if somedict.get(key):
-                    somedict[key] += ingredient.amount
-                else:
-                    somedict[key] = ingredient.amount
-
-        for k, v in somedict.items():
-            file = file + f'\n{k} - {v}'
+        ingredients = list(IngredientThrough.objects.filter(
+            recipe__carts__user=request.user
+        ).values_list(
+            'ingredient__name', 'ingredient__measurement_unit'
+        ).annotate(Sum('amount')))
+        for ingredient in ingredients:
+            file += '\n{0} ({1}) - {2}'.format(*ingredient)
 
         response = FileResponse(file, as_attachment=True, filename='file.txt')
         response.set_headers(file)
