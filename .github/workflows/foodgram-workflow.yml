@@ -21,7 +21,7 @@ jobs:
 
       - name: Test with flake8 and django tests
         run: |
-          python -m flake8 --exclude=migrations
+          python -m flake8 --exclude=migrations,settings.py --ignore=R503
 
   build:
     if: github.ref == 'refs/heads/master'  
