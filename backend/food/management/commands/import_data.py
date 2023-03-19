@@ -1,9 +1,9 @@
 import os
 
-from django.core.management.base import BaseCommand
-
-from food.models import Ingredient
 from backend.settings import BASE_DIR
+from django.core.management.base import BaseCommand
+from food.models import Ingredient
+
 
 DATA_FILES_DIR = os.path.join(BASE_DIR, 'data/')
 
