@@ -2,15 +2,17 @@ import os
 
 from backend.settings import BASE_DIR
 from django.core.management.base import BaseCommand
+
 from food.models import Ingredient
 
 DATA_FILES_DIR = os.path.join(BASE_DIR, 'data/')
+
 
 class Command(BaseCommand):
     """Command class. See help attribute for further info."""
     help = '''Take all .csv files inside "data" folder of
         root django project and populate "ingredient" table.'''
-    
+
     def _correct_files(self):
         """Only .csv files allowed to proceed."""
         files = os.listdir(DATA_FILES_DIR)
@@ -26,7 +28,9 @@ class Command(BaseCommand):
         with open(path, 'r', encoding='utf8') as csv_file:
             for line in csv_file:
                 somedict = dict()
-                somedict['name'], somedict['measurement_unit'] = line.replace('\n', '').replace('"', '').rsplit(',', 1)
+                somedict['name'], somedict['measurement_unit'] = line.replace(
+                    '\n', ''
+                ).replace('"', '').rsplit(',', 1)
                 Ingredient.objects.create(**somedict)
 
     def handle(self, *args, **options):

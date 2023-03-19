@@ -15,11 +15,19 @@ class RecipeFilter(filters.FilterSet):
 
     def get_is_in_cart(self, queryset, name, value):
 
-        return self.common_method_filter(queryset, {'carts__user': self.request.user}, value)
-    
+        return self.common_method_filter(
+            queryset,
+            {'carts__user': self.request.user},
+            value
+        )
+
     def get_is_favorited(self, queryset, name, value):
 
-        return self.common_method_filter(queryset, {'favorited__follower': self.request.user}, value)
+        return self.common_method_filter(
+            queryset,
+            {'favorited__follower': self.request.user},
+            value
+        )
 
 
 class IngredientFilter(filters.FilterSet):

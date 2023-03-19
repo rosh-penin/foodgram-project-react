@@ -8,7 +8,10 @@ class Ingredient(models.Model):
     measurement_unit = models.CharField('Measurement unit', max_length=10)
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=('name', 'measurement_unit'), name='Ingredient_unique')]
+        constraints = [models.UniqueConstraint(
+            fields=('name', 'measurement_unit'),
+            name='Ingredient_unique'
+        )]
 
     def __str__(self) -> str:
         return self.name
@@ -17,7 +20,7 @@ class Ingredient(models.Model):
 class IngredientThrough(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
-        models.CASCADE, # possible SET_NULL or DO_NOTHING?
+        models.CASCADE,  # possible SET_NULL or DO_NOTHING?
         related_name='through'
     )
     recipe = models.ForeignKey(
@@ -55,7 +58,10 @@ class Recipe(models.Model):
         related_name='recipes'
     )
     cooking_time = models.IntegerField('Time to finish cooking in minutes')
-    date_created = models.DateTimeField('Time and date of creation', auto_now_add=True)
+    date_created = models.DateTimeField(
+        'Time and date of creation',
+        auto_now_add=True
+    )
 
     def __str__(self) -> str:
         return self.name

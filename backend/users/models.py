@@ -31,7 +31,10 @@ class Subscription(models.Model):
     )
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=('follower', 'followed'), name='only_one_sub_for_pair_of_users')]
+        constraints = [models.UniqueConstraint(
+            fields=('follower', 'followed'),
+            name='only_one_sub_for_pair_of_users'
+        )]
 
 
 class Favorites(models.Model):
@@ -47,7 +50,10 @@ class Favorites(models.Model):
     )
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=('follower', 'recipe'), name='Favorites_unique')]
+        constraints = [models.UniqueConstraint(
+            fields=('follower', 'recipe'),
+            name='Favorites_unique'
+        )]
 
 
 class Cart(models.Model):
