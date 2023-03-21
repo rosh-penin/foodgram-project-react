@@ -27,7 +27,7 @@ class RecipeFilter(filters.FilterSet):
         """Returns filtered queryset for favorited recipes."""
         return self.common_method_filter(
             queryset,
-            {'favorited__follower': self.request.user},
+            {'favorited__user': self.request.user},
             value
         )
 
