@@ -44,7 +44,7 @@ class Favorites(models.Model):
     Through model for MToM relation User-Recipe models.
     Favorites.
     """
-    follower = models.ForeignKey(
+    user = models.ForeignKey(
         User,
         models.CASCADE,
         related_name='favorites'
@@ -57,7 +57,7 @@ class Favorites(models.Model):
 
     class Meta:
         constraints = [models.UniqueConstraint(
-            fields=('follower', 'recipe'),
+            fields=('user', 'recipe'),
             name='Favorites_unique'
         )]
 
@@ -77,3 +77,9 @@ class Cart(models.Model):
         models.CASCADE,
         related_name='carts'
     )
+
+    class Meta:
+        constraints = [models.UniqueConstraint(
+            fields=('recipe', 'user'),
+            name='Carts_unique'
+        )]

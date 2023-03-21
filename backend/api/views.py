@@ -48,32 +48,30 @@ class RecipeViewSet(ModelViewSet):
             condition
         ).order_by('-date_created').distinct()
 
-    @action(['post', 'delete'], detail=True)
-    def shopping_cart(self, request, pk):
-        """Adding and removing recipe from shopping cart."""
+    def get_serializer_class(self):
+        if self.action in ('shopping_cart', 'favorite'):
+            return RecipeInclusionSerializer
+
+        return super().get_serializer_class()
+
+    def _lazy_action(self, request, pk, model):
+        """DRY for some actions."""
         if request.method == 'POST':
-            recipe = get_object_or_404(Recipe, pk=pk)
-            if Cart.objects.filter(recipe=recipe, user=request.user).exists():
-
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            Cart.objects.create(recipe=recipe, user=request.user)
-            serializer = RecipeInclusionSerializer(recipe)
+            serializer = self.get_serializer(
+                data={'pk': pk, 'model': model}
+            )
+            serializer.is_valid(raise_exception=True)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-        if request.method == 'DELETE':
-            recipe = get_object_or_404(Recipe, pk=pk)
-            if not Cart.objects.filter(
-                recipe=recipe,
-                user=request.user
-            ).exists():
+        get_object_or_404(model, recipe__pk=pk, user=request.user).delete()
 
-                return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-            Cart.objects.filter(recipe=recipe, user=request.user).delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
+    @action(['post', 'delete'], detail=True)
+    def shopping_cart(self, request, pk):
+        """Adding and removing recipe from shopping cart."""
+        return self._lazy_action(request, pk, Cart)
 
     @action(['get'], detail=False)
     def download_shopping_cart(self, request):
@@ -95,35 +93,7 @@ class RecipeViewSet(ModelViewSet):
     @action(['post', 'delete'], detail=True)
     def favorite(self, request, pk):
         """Add and remove recipe from favorites."""
-        if request.method == 'POST':
-            recipe = get_object_or_404(Recipe, pk=pk)
-            if Favorites.objects.filter(
-                recipe=recipe,
-                follower=request.user
-            ).exists():
-
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            Favorites.objects.create(recipe=recipe, follower=request.user)
-            serializer = RecipeInclusionSerializer(recipe)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        if request.method == 'DELETE':
-            recipe = get_object_or_404(Recipe, pk=pk)
-            if not Favorites.objects.filter(
-                recipe=recipe,
-                follower=request.user
-            ).exists():
-
-                return Response(status=status.HTTP_400_BAD_REQUEST)
-
-            Favorites.objects.filter(
-                recipe=recipe,
-                follower=request.user
-            ).delete()
-
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        return self._lazy_action(request, pk, Favorites)
 
     def perform_create(self, serializer):
         """Add user as author to recipe."""
@@ -184,15 +154,14 @@ class UsersViewSet(DjUserViewSet):
     @action(['post', 'delete'], detail=True)
     def subscribe(self, request, id):
         """Subscribe and unsubscribe to user."""
-        user = request.user
+        author = get_object_or_404(User, pk=id)
+        data = {'follower': request.user.id, 'followed': id}
         if request.method == 'POST':
-            serializer = self.get_serializer(
-                data={'follower': user.id, 'followed': id}
-            )
+            serializer = self.get_serializer(data=data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             response_serializer = UserSubscriptionsSerializer(
-                User.objects.get(id=id),
+                author,
                 context={'request': request}
             )
 
@@ -201,15 +170,9 @@ class UsersViewSet(DjUserViewSet):
                 status=status.HTTP_201_CREATED
             )
 
-        if request.method == 'DELETE':
-            followed = get_object_or_404(User, id=id)
-            instance = get_object_or_404(
-                Subscription,
-                follower=user,
-                followed=followed
-            )
-            # Should be possible to just go by followed__id
-            # without hitting db twice
-            self.perform_destroy(instance)
+        get_object_or_404(
+            Subscription,
+            **data
+        ).delete()
 
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(status=status.HTTP_204_NO_CONTENT)

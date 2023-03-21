@@ -1,20 +1,50 @@
 import base64
 
 from django.core.files.base import ContentFile
+from django.db import transaction
 from djoser.serializers import UserCreateSerializer as DjUserCreateSerializer
+from django.shortcuts import get_object_or_404
 from food.models import Ingredient, IngredientThrough, Recipe, Tag, User
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 from users.models import Cart, Favorites, Subscription
 
 
-def user_is_on_it(user, model, somedict):
-    """For the DRY."""
-    if user.is_authenticated and model.objects.filter(**somedict):
+class UserFilterMixin():
+    """Mixin used for its method."""
+    def user_is_on_it(self, user, model, somedict):
+        """For the DRY."""
+        if user.is_authenticated and model.objects.filter(**somedict).exists():
 
-        return True
+            return True
 
-    return False
+        return False
+
+
+class RecipeSerializerCommon(serializers.ModelSerializer, UserFilterMixin):
+    """Common base for inheritance. DRY."""
+    class Meta:
+        model = Recipe
+
+    def get_is_favorited(self, object):
+        """If recipes is favorited - returns True."""
+        user = self.context['request'].user
+
+        return self.user_is_on_it(
+            user,
+            Favorites,
+            {'recipe': object.pk, 'user': user}
+        )
+
+    def get_is_in_shopping_cart(self, object):
+        """If recipe is in shopping cart - returns True."""
+        user = self.context['request'].user
+
+        return self.user_is_on_it(
+            user,
+            Cart,
+            {'recipe': object.pk, 'user': user}
+        )
 
 
 class DecodeImageField(serializers.ImageField):
@@ -56,6 +86,8 @@ class IngredientSerializer(serializers.ModelSerializer):
             someid = IngredientThrough.objects.select_related(
                 'ingredient'
             ).get(id=someid, amount=amount).ingredient.id
+        # Toss aside checking and just call get_object_or_404
+        # should be possible?
         if not Ingredient.objects.filter(id=someid).exists():
             raise NotFound('No such ingredient')
         if not amount:
@@ -83,7 +115,7 @@ class TagsSerializer(serializers.ModelSerializer):
         return Tag.objects.get(id=data)
 
 
-class UserSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer, UserFilterMixin):
     """Serializer for User model."""
     is_subscribed = serializers.SerializerMethodField()
 
@@ -102,7 +134,7 @@ class UserSerializer(serializers.ModelSerializer):
         """If user is subscribed on object - returns True."""
         user = self.context['request'].user
 
-        return user_is_on_it(
+        return self.user_is_on_it(
             user,
             Subscription,
             {'followed': object.pk, 'follower': user}
@@ -127,7 +159,27 @@ class UserCreateSerializer(DjUserCreateSerializer):
         }
 
 
-class RecipeSerializer(serializers.ModelSerializer):
+class RecipeInclusionSerializer(RecipeSerializerCommon):
+    """Serializer for shortened representation of Recipe model."""
+    class Meta(RecipeSerializerCommon.Meta):
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+    def to_internal_value(self, data):
+        user = self.context['request'].user
+        model = data.get('model')
+        recipe = get_object_or_404(Recipe, pk=data.get('pk'))
+        if model.objects.filter(recipe=recipe, user=user).exists():
+            raise serializers.ValidationError({
+                'non_fields_error':
+                f'{model._meta.verbose_name} object already exists'
+            })
+
+        model.objects.create(recipe=recipe, user=user)
+
+        return recipe
+
+
+class RecipeSerializer(RecipeSerializerCommon):
     """Serializer for Recipe model."""
     ingredients = IngredientSerializer(many=True)
     tags = TagsSerializer(many=True)
@@ -136,8 +188,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField(read_only=True)
     is_in_shopping_cart = serializers.SerializerMethodField(read_only=True)
 
-    class Meta:
-        model = Recipe
+    class Meta(RecipeSerializerCommon.Meta):
         fields = (
             'id',
             'tags',
@@ -151,6 +202,14 @@ class RecipeSerializer(serializers.ModelSerializer):
             'cooking_time'
         )
 
+    def create_ingredients(self, ingredients, recipe):
+        for dict_of_ingredients in ingredients:
+            IngredientThrough.objects.create(
+                recipe=recipe,
+                **dict_of_ingredients
+            )
+
+    @transaction.atomic
     def create(self, validated_data):
         """Most logic here is for populating MToM related tables."""
         ingredients = validated_data.pop('ingredients')
@@ -167,31 +226,11 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         recipe = Recipe.objects.create(**validated_data, image=image)
         recipe.tags.set(tags)
-        for dict_of_ingredients in ingredients:
-            IngredientThrough.objects.create(
-                recipe=recipe,
-                **dict_of_ingredients
-            )
+        self.create_ingredients(ingredients, recipe)
 
         return recipe
 
-    def get_is_favorited(self, object):
-        """If recipes is favorited - returns True."""
-        user = self.context['request'].user
-
-        return user_is_on_it(
-            user,
-            Favorites,
-            {'recipe': object.pk, 'follower': user}
-        )
-
-    def get_is_in_shopping_cart(self, object):
-        """If recipe is in shopping cart - returns True."""
-        user = self.context['request'].user
-
-        return user_is_on_it(user, Cart, {'recipe': object.pk, 'user': user})
-
-    def duplicate_validation(self, attrs):
+    def _duplicate_validation(self, attrs):
         """
         Check for duplicates in Tags and Ingredients.
         You can only add distinct objects of those models in Recipe instance.
@@ -204,13 +243,14 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         """
-        Overriden validate method calls duplicate_validation for some objects.
+        Overriden validate method calls _duplicate_validation for some objects.
         """
         for doubt_value in (attrs.get('tags'), attrs.get('ingredients')):
-            self.duplicate_validation(doubt_value)
+            self._duplicate_validation(doubt_value)
 
         return super().validate(attrs)
 
+    @transaction.atomic
     def update(self, instance, validated_data):
         """
         Most logic here is for re-populating MToM related tables.
@@ -225,20 +265,9 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         if ingredients:
             instance.ingredients.all().delete()
-            for dict_of_ingredients in ingredients:
-                IngredientThrough.objects.create(
-                    recipe=instance,
-                    **dict_of_ingredients
-                )
+            self.create_ingredients(ingredients, instance)
 
         return super().update(instance, validated_data)
-
-
-class RecipeInclusionSerializer(serializers.ModelSerializer):
-    """Serializer for shortened representation of Recipe model."""
-    class Meta:
-        model = Recipe
-        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class UserSubscriptionsSerializer(UserSerializer):
@@ -270,13 +299,12 @@ class UserSubscriptionsSerializer(UserSerializer):
         if recipes_limit is not None:
             recipes_limit = int(recipes_limit)
             serializer = RecipeInclusionSerializer(
-                data=queryset[:recipes_limit],
+                queryset[:recipes_limit],
                 many=True
             )
         else:
-            serializer = RecipeInclusionSerializer(data=queryset, many=True)
+            serializer = RecipeInclusionSerializer(queryset, many=True)
 
-        serializer.is_valid()
         return serializer.data
 
 
@@ -292,7 +320,10 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         followed = attrs.get('followed')
         if user == followed:
             raise serializers.ValidationError('You can not follow yourself.')
-        if Subscription.objects.filter(follower=user, followed=followed):
+        if Subscription.objects.filter(
+            follower=user,
+            followed=followed
+        ).exists():
             raise serializers.ValidationError('You already follow this guy.')
 
         return attrs

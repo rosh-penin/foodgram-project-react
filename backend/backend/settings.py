@@ -9,12 +9,13 @@ SECRET_KEY = os.getenv('DJANGO_KEY', get_random_secret_key())
 
 DEBUG = os.getenv('DEBUG', True)
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['localhost']
 
 HOST_IP = os.getenv('HOST', None)
 
 if HOST_IP:
     CSRF_TRUSTED_ORIGINS = [f'http://{HOST_IP}']
+    ALLOWED_HOSTS = [HOST_IP]
 
 
 INSTALLED_APPS = [

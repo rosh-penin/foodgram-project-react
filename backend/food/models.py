@@ -1,4 +1,4 @@
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, MinValueValidator
 from django.db import models
 from users.models import User
 
@@ -24,7 +24,7 @@ class IngredientThrough(models.Model):
     """
     ingredient = models.ForeignKey(
         Ingredient,
-        models.CASCADE,  # possible SET_NULL or DO_NOTHING?
+        models.CASCADE,
         related_name='through'
     )
     recipe = models.ForeignKey(
@@ -63,7 +63,10 @@ class Recipe(models.Model):
         Tag,
         related_name='recipes'
     )
-    cooking_time = models.IntegerField('Time to finish cooking in minutes')
+    cooking_time = models.IntegerField(
+        'Time to finish cooking in minutes',
+        validators=[MinValueValidator(1)]
+    )
     date_created = models.DateTimeField(
         'Time and date of creation',
         auto_now_add=True
