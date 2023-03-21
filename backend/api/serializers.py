@@ -33,7 +33,7 @@ class RecipeSerializerCommon(serializers.ModelSerializer, UserFilterMixin):
         return self.user_is_on_it(
             user,
             Favorites,
-            {'recipe': object.pk, 'user': user}
+            {'recipe': object.pk, 'user': user.id}
         )
 
     def get_is_in_shopping_cart(self, object):
@@ -43,7 +43,7 @@ class RecipeSerializerCommon(serializers.ModelSerializer, UserFilterMixin):
         return self.user_is_on_it(
             user,
             Cart,
-            {'recipe': object.pk, 'user': user}
+            {'recipe': object.pk, 'user': user.id}
         )
 
 
