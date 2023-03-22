@@ -2,11 +2,12 @@ import base64
 
 from django.core.files.base import ContentFile
 from django.db import transaction
-from djoser.serializers import UserCreateSerializer as DjUserCreateSerializer
 from django.shortcuts import get_object_or_404
-from food.models import Ingredient, IngredientThrough, Recipe, Tag, User
+from djoser.serializers import UserCreateSerializer as DjUserCreateSerializer
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
+
+from food.models import Ingredient, IngredientThrough, Recipe, Tag, User
 from users.models import Cart, Favorites, Subscription
 
 

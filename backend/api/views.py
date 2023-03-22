@@ -2,14 +2,14 @@ from django.db.models import Q, Sum
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjUserViewSet
-from food.models import Ingredient, IngredientThrough, Recipe, Tag
 from rest_framework import mixins, status
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
-from users.models import Cart, Favorites, Subscription, User
 
+from food.models import Ingredient, IngredientThrough, Recipe, Tag
+from users.models import Cart, Favorites, Subscription, User
 from .filters import IngredientFilter, RecipeFilter
 from .permissions import IsAuthorOrReadOnly
 from .serializers import (IngredientShowSerializer, RecipeInclusionSerializer,

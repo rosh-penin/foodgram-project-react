@@ -1,5 +1,6 @@
-from django.core.validators import RegexValidator, MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
+
 from users.models import User
 
 
@@ -9,6 +10,8 @@ class Ingredient(models.Model):
     measurement_unit = models.CharField('Measurement unit', max_length=10)
 
     class Meta:
+        verbose_name = 'Ingredient'
+        verbose_name_plural = 'Ingredients'
         constraints = [models.UniqueConstraint(
             fields=('name', 'measurement_unit'),
             name='Ingredient_unique'
@@ -34,6 +37,13 @@ class IngredientThrough(models.Model):
     )
     amount = models.IntegerField('Amount needed to use')
 
+    class Meta:
+        verbose_name = 'IngredientInRecipe'
+        verbose_name_plural = 'IngredientsInRecipe'
+
+    def __str__(self) -> str:
+        return f'{self.ingredient.name} in {self.recipe.name}'
+
 
 class Tag(models.Model):
     """Model for tags."""
@@ -44,6 +54,10 @@ class Tag(models.Model):
         validators=[RegexValidator(r"^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$")]
     )
     slug = models.SlugField('Tag slug', unique=True)
+
+    class Meta:
+        verbose_name = 'Tag'
+        verbose_name_plural = 'Tags'
 
     def __str__(self) -> str:
         return self.name
@@ -71,6 +85,10 @@ class Recipe(models.Model):
         'Time and date of creation',
         auto_now_add=True
     )
+
+    class Meta:
+        verbose_name = 'Recipe'
+        verbose_name_plural = 'Recipes'
 
     def __str__(self) -> str:
         return self.name
