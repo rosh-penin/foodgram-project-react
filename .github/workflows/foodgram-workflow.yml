@@ -60,6 +60,13 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USER }}
           privateKey: ${{ secrets.SSH_KEY }}
+      - uses: garygrossgarten/github-action-scp@release
+        with:
+          local: docs
+          remote: foodgram/docs
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USER }}
+          privateKey: ${{ secrets.SSH_KEY }}
 
   deploy:
     if: github.ref == 'refs/heads/master'
