@@ -33,10 +33,15 @@ class Subscription(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Subscription'
+        verbose_name_plural = 'Subscriptions'
         constraints = [models.UniqueConstraint(
             fields=('follower', 'followed'),
             name='only_one_sub_for_pair_of_users'
         )]
+
+    def __str__(self) -> str:
+        return f'{self.follower.username} follows {self.followed.username}'
 
 
 class Favorites(models.Model):
@@ -56,10 +61,15 @@ class Favorites(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Favorite'
+        verbose_name_plural = 'Favorites'
         constraints = [models.UniqueConstraint(
             fields=('user', 'recipe'),
             name='Favorites_unique'
         )]
+
+    def __str__(self) -> str:
+        return f'{self.user.username} favorites {self.recipe.name}'
 
 
 class Cart(models.Model):
@@ -79,7 +89,12 @@ class Cart(models.Model):
     )
 
     class Meta:
+        verbose_name = 'Cart'
+        verbose_name_plural = 'Carts'
         constraints = [models.UniqueConstraint(
             fields=('recipe', 'user'),
             name='Carts_unique'
         )]
+
+    def __str__(self) -> str:
+        return f'{self.recipe.name} in cart of {self.user.username}'
